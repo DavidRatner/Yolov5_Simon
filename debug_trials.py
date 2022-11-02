@@ -29,11 +29,15 @@ import matplotlib
 dirpath = r"C:\Users\davidra\Desktop\NINJA_RAFAEL\Ninja_Symon2\second_try\second_try4"
 filename = "frame_0_Screen detected, screen mode is 1" + ".jpg"
 
-dirpath = r"C:\Users\davidra\Desktop\NINJA_RAFAEL\Ninja_Symon2\first_try\first_try6"
-filename = "frame_0_Screen detected, screen mode is 2" + ".jpg"
+# dirpath = r"C:\Users\davidra\Desktop\NINJA_RAFAEL\Ninja_Symon2\first_try\first_try6"
+# filename = "frame_0_Screen detected, screen mode is 2" + ".jpg"
 
-dirpath = r"C:\Users\davidra\Desktop\NINJA_RAFAEL\Ninja_Symon2\DetectShapes\pics_from_1658831841451"
-filename = "frame156" + ".jpg"
+# dirpath = r"C:\Users\davidra\Desktop\NINJA_RAFAEL\Ninja_Symon2\DetectShapes\pics_from_1658831841451"
+# filename = "frame383" + ".jpg"
+
+
+dirpath = r"C:\Users\davidra\Desktop\NINJA_RAFAEL\Ninja_Symon2\second_try\second_try11"
+filename = "frame_3_Screen detected, screen mode is 2" + ".jpg"
 
 
 full_path = os.path.join(dirpath, filename)
@@ -45,10 +49,11 @@ debugTello.ImageProcessing.original_image = img
 # PlotCv2ImageWithPlt(self.ImageProcessing.screen, 'screen to analyze')
 debugTello.ImageProcessing.DetectScreen(True)
 #debugTello.FixPositionByScreenBB()
-flag, value = debugTello.AnalyzePicture()
-print(value)
-fin_data = debugTello.Str2IntList(value)
-fin_data.insert(0, 3)
-print(fin_data)
-print(flag)
+if debugTello.ImageProcessing.screen is not None:
+    flag, value = debugTello.AnalyzePicture()
+    # print(value)
+    # fin_data = debugTello.Str2IntList(value)
+    # fin_data.insert(0, 3)
+    # print(fin_data)
+    # print(flag)
 

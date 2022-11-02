@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -17,7 +19,7 @@ import argparse
 import pytesseract
 import Communication
 import torch
-
+import yolov5.helpers
 
 class DetectUtils:
 
@@ -296,7 +298,7 @@ class DetectUtils:
             return 8, "Unrecognized_Color"
 
     @staticmethod
-    def PrepareReturnList(orderedlist , outputflag = 0):
+    def PrepareReturnList(orderedlist, outputflag=0):
         return_list = [None]*9
         return_list[0] = outputflag
         if outputflag:
@@ -388,6 +390,35 @@ class DetectUtils:
 
         return 0, None
 
+    @staticmethod
+    def RemoveDuplicateShapes(ordered_shapes, ordered_shapes_color, ordered_shapes_bb):
+        ordered_shapesn = []
+        ordered_shapes_colorn = []
+        ordered_shapes_bbn = []
+        for idx, shapebb in enumerate(ordered_shapes_bb):
+            if idx > 0:
+                if DetectUtils.DistanceBetweenTwoBB(shapebb, ordered_shapes_bbn[-1]):
+                    ordered_shapesn.append(ordered_shapes[idx])
+                    ordered_shapes_colorn.append(ordered_shapes_color[idx])
+                    ordered_shapes_bbn.append(ordered_shapes_bb[idx])
+            else:
+                ordered_shapesn.append(ordered_shapes[idx])
+                ordered_shapes_colorn.append(ordered_shapes_color[idx])
+                ordered_shapes_bbn.append(ordered_shapes_bb[idx])
+
+        return ordered_shapesn, ordered_shapes_colorn, ordered_shapes_bbn
+
+    @staticmethod
+    def DistanceBetweenTwoBB(boundingbox1, boundingbox2):
+        (xc1, yc1, w1, h1) = boundingbox1
+        (xc2, yc2, w2, h2) = boundingbox2
+        center_bb1 = (int(xc1 + w1/2), int(yc1 + h1/2))
+        center_bb2 = (int(xc2 + w2/2), int(yc2 + h2/2))
+        if (math.pow((center_bb2[0] - center_bb1[0]),2) + math.pow((center_bb2[1] - center_bb1[1]),2) > math.pow(w1/2,2) + math.pow(h1/2,2)):
+            return True
+        else:
+            return False
+
 
 class DetectScreenInFrame:
 
@@ -398,7 +429,7 @@ class DetectScreenInFrame:
         self.screenmode = 0  # 0 - no screen , 1 - black screen, 2- silver screen, 3- green screen, 4- red screen
         self.screen = None
         self.bb = None
-        self.model = torch.hub.load('ultralytics/yolov5', 'yolov5l')  # or yolov5n - yolov5x6, custom
+        self.model = yolov5.helpers.load_model(model_path=r"C:\Users\davidra\Desktop\NINJA_RAFAEL\Yolo5_Simon\Repo\yolov5l.pt")
 
     def DetectScreen(self, print_screens=False):
         if self.filename is not None:
@@ -414,6 +445,7 @@ class DetectScreenInFrame:
             #                            img[prediction.iloc[i].ymin.astype(int):prediction.iloc[i].ymax.astype(int),
             #                            prediction.iloc[i].xmin.astype(int):prediction.iloc[i].xmax.astype(int)])
             if prediction.iloc[i]['class'].astype(int) in [62, 74, 63]:  # TV Clock Laptop
+                print("Yolo5 recognized screen")
                 print(f"we Have TV with confidence of {prediction.confidence.iloc[i] * 100}%")
                 print(f"x min = {prediction.iloc[i].xmin} , xmax = {prediction.iloc[i].xmax}")
                 print(f"y min = {prediction.iloc[i].ymin}, ymax = {prediction.iloc[i].ymax}")
@@ -467,6 +499,8 @@ class DetectScreenInFrame:
                     cv2.waitKey(0)
                 self.screen = cropped_image
                 self.bb = (xc, yc, w, h)
+        else:
+            self.DetectScreenOLD(print_screens=print_screens)
 
     def DetectScreenOLD(self, print_screens=False):
         if self.filename is not None:
@@ -508,8 +542,8 @@ class DetectScreenInFrame:
                             self.screenmode = 1
                             print(f"distance is {DetectUtils.DistanceBetweenTwoTuples(color_tuple, (0, 0, 0))}")
                             if print_screens:
-                                DetectUtils.PlotCv2ImageWithPlt(self.original_image, "original image ")
-                                DetectUtils.PlotCv2ImageWithPlt(cropped_image, "black screen image")
+                                cv2.imshow("black screen image", cropped_image)
+                                cv2.waitKey(0)
                             self.screen = cropped_image
                             self.bb = (xc, yc, w, h)
                         if DetectUtils.DistanceBetweenTwoTuples(color_tuple, (170, 170, 170)) <= 150:
@@ -517,8 +551,8 @@ class DetectScreenInFrame:
                             self.screenmode = 2
                             print(f"distance is {DetectUtils.DistanceBetweenTwoTuples(color_tuple, (170, 170, 170))}")
                             if print_screens:
-                                DetectUtils.PlotCv2ImageWithPlt(self.original_image, "original image ")
-                                DetectUtils.PlotCv2ImageWithPlt(cropped_image, "silver screen image")
+                                cv2.imshow("silver screen image", cropped_image)
+                                cv2.waitKey(0)
                             self.screen = cropped_image
                             self.bb = (xc, yc, w, h)
                         if DetectUtils.DistanceBetweenTwoTuples(color_tuple, (200, 0, 0)) <= 60:
@@ -526,8 +560,8 @@ class DetectScreenInFrame:
                             self.screenmode = 4
                             print(f"distance is {DetectUtils.DistanceBetweenTwoTuples(color_tuple, (200, 0, 0))}")
                             if print_screens:
-                                DetectUtils.PlotCv2ImageWithPlt(self.original_image, "original image ")
-                                DetectUtils.PlotCv2ImageWithPlt(cropped_image, "red screen image")
+                                cv2.imshow("red screen image", cropped_image)
+                                cv2.waitKey(0)
                             self.screen = cropped_image
                             self.bb = (xc, yc, w, h)
                         if DetectUtils.DistanceBetweenTwoTuples(color_tuple, (20, 100, 20)) <= 60:
@@ -535,11 +569,10 @@ class DetectScreenInFrame:
                             self.screenmode = 3
                             print(f"distance is {DetectUtils.DistanceBetweenTwoTuples(color_tuple, (20, 70, 20))}")
                             if print_screens:
-                                DetectUtils.PlotCv2ImageWithPlt(self.original_image, "original image ")
-                                DetectUtils.PlotCv2ImageWithPlt(cropped_image, "green screen image")
+                                cv2.imshow("green screen image", cropped_image)
+                                cv2.waitKey(0)
                             self.screen = cropped_image
                             self.bb = (xc, yc, w, h)
-
 
     def DetectfeaturesInSilverScreen(self):
         if self.screen is not None:
@@ -640,7 +673,6 @@ class DetectScreenInFrame:
         final_list = DetectUtils.RecognizeShapesFromListWords(str_list)
         return final_list
 
-
     def OrderShapes(self, shapes, shapes_color, shapes_bb):
         image_size = self.screen.shape
         ordered_shapes = []
@@ -652,7 +684,11 @@ class DetectScreenInFrame:
             ordered_shapes.append(shapes[place])
             ordered_shapes_color.append(shapes_color[place])
             ordered_shapes_bb.append(shapes_bb[place])
-        return ordered_shapes, ordered_shapes_color, ordered_shapes_bb
+        # Removing Duplicates (shapes that are inside other shapes
+        ordered_shapes_nd, ordered_shapes_color_nd, ordered_shapes_bb_nd = DetectUtils.RemoveDuplicateShapes(ordered_shapes, ordered_shapes_color, ordered_shapes_bb)
+        return ordered_shapes_nd, ordered_shapes_color_nd, ordered_shapes_bb_nd
+
+
 
 
 def main():
@@ -734,21 +770,6 @@ def main():
                     for i in range(len(ordered_shapes)):
                         name = f"shape {i} with color {DetectUtils.RecognizeColor(ordered_shapes_color[i])[1]} "
                         DetectUtils.PlotCv2ImageWithPlt(ordered_shapes[i], name)
-
-            # if len(numbers) > 0:
-            #     if detect_number:
-            #         for i in range(len(numbers)):
-            #             out1, out2 = DetectUtils.RecognizeDigit(numbers[i], model)
-            #             name = f"Number on screen is {out1} with with probability of {out2 * 100}"
-            #             if print_number:
-            #                 DetectUtils.PlotCv2ImageWithPlt(numbers[i], name)
-            #             else:
-            #                 print(f"The number is : {out1} with probability of {out2 * 100}")
-            # else:
-            #     print("No Screen Number")
-
-
-
 
         print(f"total time with number recognition = {time.time() - start} seconds")
 

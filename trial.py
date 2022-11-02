@@ -1,16 +1,28 @@
-import torch
+import time
+
 import cv2
 import os
-
+import torch
+import cv2
+import yolov5.helpers
 
 # Model
-model = torch.hub.load('ultralytics/yolov5', 'yolov5l')  # or yolov5n - yolov5x6, custom
+#model = torch.hub.load('ultralytics/yolov5', 'yolov5l')  # or yolov5n - yolov5x6, custom
+
+model_files_path = r"C:\Users\davidra\Desktop\NINJA_RAFAEL\Yolo5_Simon\Repo\yolov5l.pt"
+#device = "cuda:0"
+model = yolov5.helpers.load_model(model_path=model_files_path)
+
+# Images
+
+# Inference
+#results = model(img)
 
 dirpath = r"C:\Users\davidra\Desktop\NINJA_RAFAEL\Ninja_Symon2\second_try\second_try4"
 filename = "frame_0_Screen detected, screen mode is 1" + ".jpg"
 
 dirpath = r"C:\Users\davidra\Desktop\NINJA_RAFAEL\Ninja_Symon2\second_try\second_try11"
-filename = "frame_6_Screen detected, screen mode is 2" + ".jpg"
+filename = "frame_0_Screen detected, screen mode is 1" + ".jpg"
 
 
 # From Pics
@@ -23,8 +35,9 @@ cv2.imshow("photresults = {Detections: 1} image 1/1: 720x960 1 tv\nSpeed: 0.0ms 
 cv2.waitKey(0)
 
 # Inference
+start = time.time()
 results = model(img)
-
+print(f" the real time that took to evaluate one picture {time.time()- start}")
 # Results
 results.print()  # or .show(), .save(), .crop(), .pandas(), etc.
 prediction = results.pandas().xyxy[0]
